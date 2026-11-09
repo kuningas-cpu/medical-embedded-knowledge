@@ -42,7 +42,7 @@ language: zh
 
 ### 概念介绍
 
-数字滤波器是医疗器械信号处理的核心技术，用于去除噪声、提取特征信号、抑制干扰。与模拟滤波器相比，数字滤波器具有精度高、稳定性好、易于调整等优点。
+数字滤波器是医疗器械信号处理的核心技术，用于去除噪声、提取特征信号、抑制干扰。与模拟滤波器相比，数字滤波器具有精度高、稳定性好、易于编程和参数调整等优点。
 
 **数字滤波器的应用**：
 - **心电信号处理**：去除工频干扰、基线漂移
@@ -50,7 +50,6 @@ language: zh
 - **血压信号处理**：平滑脉搏波形
 - **脑电信号处理**：提取特定频段的脑电波
 - **超声信号处理**：去除噪声、增强对比度
-
 
 ### 数字滤波器分类
 
@@ -156,7 +155,6 @@ void FIR_Free(FIR_Filter_t* fir) {
 - 通过卷积计算输出
 - 浮点实现，精度高但计算量大
 
-
 #### FIR滤波器定点实现
 
 ```c
@@ -247,7 +245,6 @@ float filtered_signal = FIR_Process(&lpf_50hz, raw_signal);
 - 截止频率50Hz，采样率1000Hz
 - 31阶滤波器，过渡带较窄
 - 系数通过MATLAB或Python设计工具生成
-
 
 ### IIR滤波器
 
@@ -356,7 +353,6 @@ float filtered = Biquad_Process(&butterworth_lpf, raw_signal);
 - 2阶滤波器计算量小，适合实时处理
 - 系数通过MATLAB或Python计算
 
-
 #### 陷波滤波器（Notch Filter）
 
 陷波滤波器用于抑制特定频率的干扰，如50Hz/60Hz工频干扰。
@@ -461,7 +457,6 @@ int16_t MovingAverage_Process_Fast(MovingAverage_t* ma, int16_t input) {
 - 移动平均滤波器计算简单，适合实时处理
 - 使用累加和，避免重复计算
 - 长度为2的幂次时，可以使用位运算优化
-
 
 ### 医疗器械滤波应用
 
@@ -582,11 +577,11 @@ void SpO2_Process(SpO2_Filter_t* sf, float red_raw, float ir_raw) {
 - 移动平均滤波器提取DC分量（平均光强）
 - AC/DC比值用于计算血氧饱和度
 
-
 ### 滤波器设计工具
 
 #### 使用Python设计滤波器
 
+{% raw %}
 ```python
 import numpy as np
 from scipy import signal
@@ -672,6 +667,7 @@ print("\nIIR Butterworth Filter Coefficients:")
 print(f"b0={b[0]:.4f}, b1={b[1]:.4f}, b2={b[2]:.4f}")
 print(f"a0={a[0]:.4f}, a1={a[1]:.4f}, a2={a[2]:.4f}")
 ```
+{% endraw %}
 
 **代码说明**：
 - 使用scipy.signal库设计滤波器
@@ -721,7 +717,6 @@ void Process_CMSIS_Biquad(float* input, float* output, uint32_t blockSize) {
 - CMSIS-DSP库提供优化的DSP函数
 - 利用ARM Cortex-M的DSP指令
 - 性能比普通C代码快2-10倍
-
 
 ### 最佳实践
 
@@ -969,7 +964,7 @@ void Process_CMSIS_Biquad(float* input, float* output, uint32_t blockSize) {
            for (int i = 0; i < fir->length; i++) {
                weight = (float)i / fir->length;
                output[i] = weight * FIR_Process(fir, input[i]) + 
-                          (1.0f - weight) * input[i];
+                           (1.0f - weight) * input[i];
            }
            ```
         
@@ -999,57 +994,40 @@ void Process_CMSIS_Biquad(float* input, float* output, uint32_t blockSize) {
         
         2. **脉冲响应测试**：
            - 输入单位脉冲
-           - 观察输出波形
-           - 验证FIR长度和IIR衰减
+           - 观察输出响应
+           - 验证响应长度和衰减
         
-        3. **阶跃响应测试**：
-           - 输入阶跃信号
-           - 测量上升时间和超调
-           - 验证瞬态特性
+        3. **噪声抑制测试**：
+           - 添加已知频率噪声
+           - 测量滤波前后信噪比
+           - 验证噪声抑制效果
         
-        4. **实际信号测试**：
-           - 使用真实的医疗信号
-           - 对比滤波前后的效果
-           - 验证噪声抑制能力
+        4. **性能测试**：
+           - 测量每个样本的处理时间
+           - 检查CPU占用率
+           - 验证是否满足实时性要求
         
-        5. **性能测试**：
-           - 测量执行时间
-           - 测量内存占用
-           - 验证实时性
-           
-           ```c
-           uint32_t start = DWT->CYCCNT;
-           float output = FIR_Process(&fir, input);
-           uint32_t cycles = DWT->CYCCNT - start;
-           ```
+        5. **边界条件测试**：
+           - 测试最大/最小输入
+           - 测试采样率变化
+           - 检查数值稳定性
         
-        6. **稳定性测试**：
-           - 长时间运行
-           - 极端输入测试
-           - 验证无溢出和发散
-        
-        7. **精度测试**：
-           - 对比浮点和定点实现
-           - 测量量化误差
-           - 验证满足精度要求
-        
-        **验证工具**：
-        - MATLAB/Python：离线分析
-        - 示波器：实时波形观察
-        - 频谱分析仪：频域分析
+        **测试工具**：
+        - MATLAB/Python：频率响应分析
+        - 示波器：实时信号观察
         - 逻辑分析仪：时序分析
+        - 目标硬件：性能测试
 
-## 相关资源
+## 参考资料
 
-- [信号处理基础](index.md)
+- [滤波器设计与实现最佳实践](index.md)
 - [ADC/DAC](../hardware-interfaces/adc-dac.md)
 - [内存管理](../embedded-c-cpp/memory-management.md)
 
-## 参考文献
+## 参考书籍
 
 1. "Digital Signal Processing" - John G. Proakis, Dimitris G. Manolakis
 2. "The Scientist and Engineer's Guide to Digital Signal Processing" - Steven W. Smith
 3. CMSIS-DSP Software Library - ARM
 4. IEC 60601-2-27:2011 - Particular requirements for electrocardiographic monitoring equipment
 5. "Embedded Signal Processing with the Micro Signal Architecture" - Woon-Seng Gan, Sen M. Kuo
-
